@@ -198,14 +198,14 @@ BATSMAN_ALL_YEARS = None
 BOWLER_ALL_YEARS = None
 BATSMAN_RECENT = None
 BOWLER_RECENT = None
-actual_points_df = pd.read_csv('New Folder/point4.csv')
+actual_points_df = pd.read_csv('match data/point4.csv')
 
 def load_cricket_data():
     """Load all cricket data once and store in global variables"""
     global SQUAD_DF, BATSMAN_ALL_YEARS, BOWLER_ALL_YEARS, BATSMAN_RECENT, BOWLER_RECENT
     
     try:
-        SQUAD_DF = pd.read_csv('New Folder/SquadPlayerNames14.csv')
+        SQUAD_DF = pd.read_csv('match data/SquadPlayerNames14.csv')
         playing_players = SQUAD_DF[SQUAD_DF['IsPlaying'] == 'PLAYING']
         playing_names = playing_players['Player Name'].tolist()
         print(f"Loaded {len(playing_names)} active players from squad list")
@@ -220,7 +220,7 @@ def load_cricket_data():
     for year in range(2018, 2026):
         try:
             # Load batsman data with new format
-            batsman_df = pd.read_csv(f"a/top_run_scorers_{year}.csv")
+            batsman_df = pd.read_csv(f"player data/top_run_scorers_{year}.csv")
             
             # Map new column names to old format
             column_mapping = {
@@ -296,7 +296,7 @@ def load_cricket_data():
         
         try:
             # Load bowler data with new format
-            bowler_df = pd.read_csv(f"a/most_wickets_{year}.csv")
+            bowler_df = pd.read_csv(f"player data/most_wickets_{year}.csv")
             
             # Map new column names to old format
             bowl_column_mapping = {
