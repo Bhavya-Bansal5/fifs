@@ -205,7 +205,7 @@ def load_cricket_data():
     global SQUAD_DF, BATSMAN_ALL_YEARS, BOWLER_ALL_YEARS, BATSMAN_RECENT, BOWLER_RECENT
     
     try:
-        SQUAD_DF = pd.read_csv('match data/SquadPlayerNames14.csv')
+        SQUAD_DF = pd.read_csv('match data/SquadPlayerNames16.csv')
         playing_players = SQUAD_DF[SQUAD_DF['IsPlaying'] == 'PLAYING']
         playing_names = playing_players['Player Name'].tolist()
         print(f"Loaded {len(playing_names)} active players from squad list")
@@ -368,31 +368,30 @@ def load_cricket_data():
     BATSMAN_RECENT = BATSMAN_ALL_YEARS[BATSMAN_ALL_YEARS['year'].isin(last_two_years)]
     BOWLER_RECENT = BOWLER_ALL_YEARS[BOWLER_ALL_YEARS['year'].isin(last_two_years)]
 
+
 def optimize_bowling_point_system():
     # Ensure data is loaded
     if SQUAD_DF is None:
         load_cricket_data()
         
     # Define point value options
-    wicket_points_options = [25]
-    three_wicket_points_options = [ 4]
-    maiden_points_options = [12]
-    
+    wicket_points_options = [35]
+    runs_points_optins=[2]
     # For four and five wicket hauls, we'll derive as multiples of three_wicket_points
     # (i.e., 2x and 3x respectively)
     
     # Define independent factor options (no requirement that lifetime + form = 1)
     # Here we use a reduced set for demonstration; adjust as needed.
-    batting_lifetime_options = [round(i/20,2) for i in range(1,2)]
+    batting_lifetime_options = [round(i/20,2) for i in range(3,5)]
     
-    bowling_lifetime_options = [round(i/20,2) for i in range(1,2)]
+    bowling_lifetime_options = [round(i/20,2) for i in range(14,15)]
     
     
     # Generate all point combinations
     point_combinations = list(product(
         wicket_points_options,
-        three_wicket_points_options,
-        maiden_points_options,
+        runs_points_optins
+        
     ))
     
     total_point_combos = len(point_combinations)
@@ -412,8 +411,7 @@ def optimize_bowling_point_system():
             existing_df = pd.read_excel(excel_file)
             for _, row in existing_df.iterrows():
                 key = (
-                    row['wicket_points'], row['three_wicket_points'], row['four_wicket_points'],
-                    row['five_wicket_points'], row['maiden_points'],
+                    row['wicket_points'], row['run_pts'],
                     row['batting_lifetime_factor'], row['batting_form_factor'],
                     row['bowling_lifetime_factor'], row['bowling_form_factor']
                 )
@@ -430,35 +428,29 @@ def optimize_bowling_point_system():
         for batting_form_factor in [round(1-batting_lifetime_factor,2)]:
             for bowling_lifetime_factor in bowling_lifetime_options:
                 for bowling_form_factor in [round(1-bowling_lifetime_factor,2)]:
-                    print(f"\nTesting with Batting LT={batting_lifetime_factor}, Batting Form={batting_form_factor}, "
+                    print(f"Testing with Batting LT={batting_lifetime_factor}, Batting Form={batting_form_factor}, "
                           f"Bowling LT={bowling_lifetime_factor}, Bowling Form={bowling_form_factor}")
                     
                     for combo in point_combinations:
-                        wicket_pts, three_wkt_pts, maiden_pts = combo
-                        # Derive additional point values
-                        four_wkt_pts = 2 * three_wkt_pts
-                        five_wkt_pts = 3 * three_wkt_pts
+                        wicket_pts,run_pts = combo
                         
                         key = (
-                            wicket_pts, three_wkt_pts, four_wkt_pts, five_wkt_pts, maiden_pts,
+                            wicket_pts, run_pts,
                             batting_lifetime_factor, batting_form_factor,
                             bowling_lifetime_factor, bowling_form_factor
                         )
-                    
+                        
                         try:
                             player_points, fantasy_team = calculate_points_and_select_team(
                                 batting_lifetime_factor=batting_lifetime_factor,
                                 batting_form_factor=batting_form_factor,
                                 bowling_lifetime_factor=bowling_lifetime_factor,
+                                run_pts=run_pts,
                                 bowling_form_factor=bowling_form_factor,
                                 wicket_points=wicket_pts,
-                                three_wicket_points=three_wkt_pts,
-                                four_wicket_points=four_wkt_pts,
-                                five_wicket_points=five_wkt_pts,
-                                maiden_points=maiden_pts,
+                                
                             )
                             fantasy_team = fantasy_team.sort_values(by='total_points', ascending=False).reset_index(drop=True)
-                            
                             print(fantasy_team)    
                         except Exception as e:
                             print(f"Error with combo {combo} and factors BT LT={batting_lifetime_factor}, "
@@ -483,10 +475,8 @@ def calculate_points_and_select_team(
     bowling_lifetime_factor=0.7,
     bowling_form_factor=0.3,
     wicket_points=25,
-    three_wicket_points=4,
-    four_wicket_points=8,
-    five_wicket_points=12,
-    maiden_points=1,
+    run_pts=1,
+    
 ):
     """Calculate points and select team using pre-loaded data"""
     if SQUAD_DF is None:
@@ -555,17 +545,17 @@ def calculate_points_and_select_team(
         'balls_bowled': 'sum',
         'innings': 'sum'
     }).reset_index()
-
+        
     def calculate_batting_points(df):
         points = pd.DataFrame()
         points['player_id'] = df['player_id']
         points['player_name'] = df['player_name']
-        points['runs_points'] = df['runs_scored'] * 1
-        points['fours_points'] = df['fours'] * 4
-        points['sixes_points'] = df['sixes'] * 6
-        points['thirty_points'] = df['thirties'] * 4
-        points['fifty_points'] = df['fifties'] * 8
-        points['hundred_points'] = df['hundred'] * 16
+        points['runs_points'] = df['runs_scored'] * run_pts
+        points['fours_points'] = df['fours'] * 4*run_pts
+        points['sixes_points'] = df['sixes'] * 6* run_pts
+        points['thirty_points'] = df['thirties'] * 4* run_pts
+        points['fifty_points'] = df['fifties'] * 8* run_pts
+        points['hundred_points'] = df['hundred'] * 16* run_pts
         points['total_batting_points'] = (points['runs_points'] + points['fours_points'] +
                                             points['sixes_points'] + points['thirty_points'] +
                                             points['fifty_points'] + points['hundred_points'])
@@ -581,10 +571,10 @@ def calculate_points_and_select_team(
         points['player_id'] = df['player_id']
         points['player_name'] = df['player_name']
         points['wicket_points'] = df['wickets'] * wicket_points
-        points['three_wkt_points'] = df['three_wickets_haul'] * three_wicket_points
-        points['four_wkt_points'] = df['four_wickets_haul'] * four_wicket_points
-        points['five_wkt_points'] = df['five_wickets_haul'] * five_wicket_points
-        points['maiden_points'] = df['most_maidens'] * maiden_points
+        points['three_wkt_points'] = df['three_wickets_haul'] * 4*wicket_points/25
+        points['four_wkt_points'] = df['four_wickets_haul'] * 8*wicket_points/25
+        points['five_wkt_points'] = df['five_wickets_haul'] * 12*wicket_points/25
+        points['maiden_points'] = df['most_maidens'] * 12*wicket_points/25
         points['total_bowling_points'] = (points['wicket_points'] + points['three_wkt_points'] +
                                           points['four_wkt_points'] + points['five_wkt_points'] +
                                           points['maiden_points'])
@@ -594,6 +584,7 @@ def calculate_points_and_select_team(
             axis=1
         )
         return points
+
 
     batting_lifetime_points = calculate_batting_points(batsman_lifetime)
     batting_form_points = calculate_batting_points(batsman_form)
@@ -631,7 +622,7 @@ def calculate_points_and_select_team(
     'player_id': 'first',
     'weighted_bowling_points': 'sum'
     }).reset_index()
-
+    
 # Merge batting and bowling points summary with an outer join
     player_points = pd.merge(
     batting_points_summary,

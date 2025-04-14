@@ -50,11 +50,11 @@ def fetch_and_save(url, callback, filename, selected_columns=None):
 
     print(f"Data saved to {csv_filename}")
 
-remove_existing_csv("New Folder/most_wickets_2025")
-fetch_and_save(urls["most_wickets"], "onmostwickets", "New Folder/most_wickets_2025")
+remove_existing_csv("player data/most_wickets_2025")
+fetch_and_save(urls["most_wickets"], "onmostwickets", "player data/most_wickets_2025")
 
-remove_existing_csv("New Folder/top_run_scorers_2025")
-fetch_and_save(urls["top_run_scorers"], "ontoprunsscorers", "New Folder/top_run_scorers_2025")
+remove_existing_csv("player data/top_run_scorers_2025")
+fetch_and_save(urls["top_run_scorers"], "ontoprunsscorers", "player data/top_run_scorers_2025")
 
 match_schedule_columns = [
     "CompetitionID", "MatchID", "MatchTypeID", "MatchType", "MatchStatus", "MatchDate", "MatchDateNew",
